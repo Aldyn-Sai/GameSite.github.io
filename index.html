@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Птичка и столбы</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: linear-gradient(135deg, #87CEEB, #E0F7FA);
+            font-family: 'Comic Neue', cursive;
+            overflow: hidden;
+        }
+
+        #gameContainer {
+            position: relative;
+            width: 400px;
+            height: 600px;
+            background-color: #87CEEB;
+            overflow: hidden;
+            border-radius: 15px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+
+        canvas {
+            display: block;
+        }
+
+        #score {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            font-size: 28px;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            z-index: 100;
+        }
+
+        #highScore {
+            position: absolute;
+            top: 60px;
+            left: 20px;
+            font-size: 18px;
+            color: #FFD700;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            z-index: 100;
+        }
+
+        .menu {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: rgba(0,0,0,0.7);
+            z-index: 200;
+        }
+
+        .menu-content {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+            max-width: 300px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        h1 {
+            color: #FF5722;
+            margin-bottom: 20px;
+            font-size: 36px;
+            text-shadow: 3px 3px 0 rgba(0,0,0,0.1);
+        }
+
+        .btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            margin: 10px;
+            font-size: 18px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-family: 'Comic Neue', cursive;
+            transition: all 0.3s;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            width: 200px;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+            background: #66BB6A;
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+        }
+
+        .btn-easy {
+            background: #4CAF50;
+        }
+
+        .btn-medium {
+            background: #FFC107;
+        }
+
+        .btn-hard {
+            background: #F44336;
+        }
+
+        #controls {
+            position: absolute;
+            bottom: 20px;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            z-index: 100;
+        }
+
+        .control-btn {
+            background: rgba(255,255,255,0.8);
+            border: none;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            transition: all 0.3s;
+        }
+
+        .control-btn:hover {
+            transform: scale(1.1);
+        }
+
+        #notification {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 20px 30px;
+            border-radius: 10px;
+            font-size: 20px;
+            display: none;
+            z-index: 300;
+            text-align: center;
+        }
+
+        .cloud {
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+            opacity: 0.8;
+        }
+
+        .ground {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 20px;
+            background: #8BC34A;
+            z-index: 50;
+        }
+
+        .grass {
+            position: absolute;
+            bottom: 20px;
+            width: 100%;
+            height: 10px;
+            background: #7CB342;
+            z-index: 50;
+        }
+
+        .level-info {
+            margin-top: 15px;
+            font-size: 14px;
+            color: #666;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 10px;
+        }
+        
+        #speedInfo {
+            position: absolute;
+            top: 100px;
+            left: 20px;
+            font-size: 16px;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            z-index: 100;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <div id="clouds"></div>
+        <canvas id="gameCanvas" width="400" height="600"></canvas>
+        <div class="ground"></div>
+        <div class="grass"></div>
+        <div id="score">0</div>
+        <div id="highScore">Лучший: 0</div>
+        <div id="speedInfo">Скорость: 1x</div>
+        
+        <div id="controls">
+            <button class="control-btn" onclick="togglePause()">⏸️</button>
+            <button class="control-btn" onclick="resetGame()">🔄</button>
+        </div>
+        
+        <div id="startMenu" class="menu">
+            <div class="menu-content">
+                <h1>Птичка и столбы</h1>
+                <p style="color: #666; margin-bottom: 20px;">Выберите уровень сложности:</p>
+                <button class="btn btn-easy" onclick="startGame('easy')">Легкий</button>
+                <button class="btn btn-medium" onclick="startGame('medium')">Средний</button>
+                <button class="btn btn-hard" onclick="startGame('hard')">Сложный</button>
+                <div class="level-info">
+                    <p><strong>Легкий:</strong> Медленные столбы, большие промежутки</p>
+                    <p><strong>Средний:</strong> Средняя скорость, нормальные промежутки</p>
+                    <p><strong>Сложный:</strong> Быстрые столбы, узкие промежутки</p>
+                </div>
+                <p style="color: #666; margin-top: 20px;">Нажми пробел, чтобы лететь!</p>
+            </div>
+        </div>
+        
+        <div id="notification"></div>
+    </div>
+
+    <audio id="flapSound" src="https://assets.mixkit.co/sfx/preview/mixkit-arcade-game-jump-coin-216.mp3"></audio>
+    <audio id="hitSound" src="https://assets.mixkit.co/sfx/preview/mixkit-arcade-retro-game-over-213.mp3"></audio>
+    <audio id="pointSound" src="https://assets.mixkit.co/sfx/preview/mixkit-achievement-bell-600.mp3"></audio>
+    <audio id="music" src="https://assets.mixkit.co/music/preview/mixkit-happy-children-1125.mp3" loop></audio>
+    <audio id="speedUpSound" src="https://assets.mixkit.co/sfx/preview/mixkit-achievement-extra-bonus-1290.mp3"></audio>
+
+    <script>
+        // Элементы игры
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreElement = document.getElementById('score');
+        const highScoreElement = document.getElementById('highScore');
+        const speedInfoElement = document.getElementById('speedInfo');
+        const startMenu = document.getElementById('startMenu');
+        const notificationElement = document.getElementById('notification');
+        const cloudsContainer = document.getElementById('clouds');
+        const music = document.getElementById('music');
+        const flapSound = document.getElementById('flapSound');
+        const hitSound = document.getElementById('hitSound');
+        const pointSound = document.getElementById('pointSound');
+        const speedUpSound = document.getElementById('speedUpSound');
+
+        // Настройки игры по умолчанию (средний уровень)
+        let settings = {
+            gravity: 0.15,
+            jumpForce: -5.5,
+            speed: 1.5,
+            gapHeight: 180,
+            gapDistance: 200,
+            birdWidth: 40,
+            birdHeight: 30,
+            baseSpeed: 1.5,
+            speedMultiplier: 1
+        };
+
+        // Настройки для разных уровней сложности
+        const difficultySettings = {
+            easy: {
+                gravity: 0.12,
+                jumpForce: -5,
+                speed: 1.2,
+                gapHeight: 220,
+                gapDistance: 250,
+                birdWidth: 40,
+                birdHeight: 30,
+                baseSpeed: 1.2,
+                speedMultiplier: 1
+            },
+            medium: {
+                gravity: 0.15,
+                jumpForce: -5.5,
+                speed: 1.5,
+                gapHeight: 180,
+                gapDistance: 200,
+                birdWidth: 40,
+                birdHeight: 30,
+                baseSpeed: 1.5,
+                speedMultiplier: 1
+            },
+            hard: {
+                gravity: 0.2,
+                jumpForce: -6,
+                speed: 2.2,
+                gapHeight: 140,
+                gapDistance: 160,
+                birdWidth: 35,
+                birdHeight: 25,
+                baseSpeed: 2.2,
+                speedMultiplier: 1
+            }
+        };
+
+        // Состояние игры
+        let bird = {
+            x: 80,
+            y: canvas.height / 2,
+            width: settings.birdWidth,
+            height: settings.birdHeight,
+            velocity: 0,
+            rotation: 0
+        };
+
+        let pipes = [];
+        let score = 0;
+        let highScore = localStorage.getItem('flappyHighScore') || 0;
+        let gameActive = false;
+        let gamePaused = false;
+        let animationFrameId = null;
+        let clouds = [];
+        let currentDifficulty = 'medium';
+        let speedLevel = 1;
+        let lastSpeedIncreaseScore = 0;
+
+        // Облака для фона
+        function createClouds() {
+            for (let i = 0; i < 5; i++) {
+                clouds.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height * 0.5,
+                    width: 80 + Math.random() * 70,
+                    speed: 0.2 + Math.random() * 0.3
+                });
+            }
+        }
+
+        function updateClouds() {
+            clouds.forEach(cloud => {
+                cloud.x -= cloud.speed * settings.speedMultiplier;
+                if (cloud.x + cloud.width < 0) {
+                    cloud.x = canvas.width;
+                    cloud.y = Math.random() * canvas.height * 0.5;
+                }
+            });
+        }
+
+        function drawClouds() {
+            clouds.forEach(cloud => {
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                // Рисуем пушистые облака
+                ctx.beginPath();
+                ctx.arc(cloud.x, cloud.y, cloud.width * 0.2, 0, Math.PI * 2);
+                ctx.arc(cloud.x + cloud.width * 0.3, cloud.y - cloud.width * 0.1, cloud.width * 0.25, 0, Math.PI * 2);
+                ctx.arc(cloud.x + cloud.width * 0.6, cloud.y, cloud.width * 0.3, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+
+        // Птичка
+        function drawBird() {
+            ctx.save();
+            ctx.translate(bird.x + bird.width / 2, bird.y + bird.height / 2);
+            ctx.rotate(bird.rotation * Math.PI / 180);
+            
+            // Тело птички
+            ctx.fillStyle = '#FFD700';
+            ctx.beginPath();
+            ctx.ellipse(0, 0, bird.width / 2, bird.height / 2, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Хвостик
+            ctx.fillStyle = '#FFD700';
+            ctx.beginPath();
+            ctx.moveTo(-bird.width * 0.5, 0);
+            ctx.lineTo(-bird.width * 0.7, -bird.height * 0.3);
+            ctx.lineTo(-bird.width * 0.7, bird.height * 0.3);
+            ctx.closePath();
+            ctx.fill();
+            
+            // Крылья (без анимации)
+            ctx.fillStyle = '#FFC107';    
+            // Правое крыло (статичное)
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-bird.width * 0.6, bird.height * 0.2);
+            ctx.lineTo(-bird.width * 0.4, bird.height * 0.5);
+            ctx.closePath();
+            ctx.fill();
+            
+            // Глаз
+            ctx.fillStyle = 'white';
+            ctx.beginPath();
+            ctx.arc(bird.width * 0.2, -bird.height * 0.2, 5, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.fillStyle = 'black';
+            ctx.beginPath();
+            ctx.arc(bird.width * 0.2, -bird.height * 0.2, 2, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Клюв
+            ctx.fillStyle = '#FF5722';
+            ctx.beginPath();
+            ctx.moveTo(bird.width * 0.3, 0);
+            ctx.lineTo(bird.width * 0.5, -3);
+            ctx.lineTo(bird.width * 0.5, 3);
+            ctx.fill();
+            
+            ctx.restore();
+        }
+
+        function updateBird() {
+            if (gamePaused) return;
+            
+            bird.velocity += settings.gravity;
+            bird.y += bird.velocity;
+            
+            // Поворот птички в зависимости от скорости
+            bird.rotation = Math.min(Math.max(bird.velocity * 8, -25), 25);
+            
+            // Проверка границ
+            if (bird.y < 0) {
+                bird.y = 0;
+                bird.velocity = 0;
+            }
+            
+            if (bird.y + bird.height > canvas.height - 20) {
+                bird.y = canvas.height - bird.height - 20;
+                bird.velocity = 0;
+                if (gameActive) gameOver();
+            }
+        }
+
+        function flap() {
+            if (!gameActive || gamePaused) return;
+            
+            bird.velocity = settings.jumpForce;
+            bird.rotation = -20;
+            
+            flapSound.currentTime = 0;
+            flapSound.play();
+        }
+
+        // Столбы
+        function createPipe() {
+            const gapStart = Math.random() * (canvas.height - settings.gapHeight - 100) + 50;
+            
+            pipes.push({
+                x: canvas.width,
+                gapStart: gapStart,
+                gapHeight: settings.gapHeight,
+                passed: false,
+                width: 60,
+                color: `hsl(${Math.random() * 60 + 120}, 70%, 50%)`
+            });
+        }
+
+        function drawPipes() {
+            pipes.forEach(pipe => {
+                // Верхний столб
+                ctx.fillStyle = pipe.color;
+                ctx.fillRect(pipe.x, 0, pipe.width, pipe.gapStart);
+                
+                // Нижний столб
+                ctx.fillRect(pipe.x, pipe.gapStart + pipe.gapHeight, pipe.width, canvas.height - pipe.gapStart - pipe.gapHeight - 20);
+                
+                // Украшение труб
+                ctx.fillStyle = '#388E3C';
+                ctx.fillRect(pipe.x - 5, pipe.gapStart - 15, pipe.width + 10, 15);
+                ctx.fillRect(pipe.x - 5, pipe.gapStart + pipe.gapHeight, pipe.width + 10, 15);
+            });
+        }
+
+        function updatePipes() {
+            if (gamePaused) return;
+            
+            pipes.forEach(pipe => {
+                pipe.x -= settings.speed * settings.speedMultiplier;
+                
+                // Проверка прохождения столбов
+                if (!pipe.passed && bird.x > pipe.x + pipe.width) {
+                    pipe.passed = true;
+                    score++;
+                    scoreElement.textContent = score;
+                    pointSound.currentTime = 0;
+                    pointSound.play();
+                    
+                    // Проверяем, нужно ли увеличить скорость
+                    checkSpeedIncrease();
+                    
+                    if (score > highScore) {
+                        highScore = score;
+                        highScoreElement.textContent = `Лучший: ${highScore}`;
+                        localStorage.setItem('flappyHighScore', highScore);
+                    }
+                }
+            });
+            
+            // Удаление столбов за пределами экрана
+            if (pipes.length > 0 && pipes[0].x + pipes[0].width < 0) {
+                pipes.shift();
+            }
+            
+            // Создание новых столбов
+            if (pipes.length === 0 || pipes[pipes.length - 1].x < canvas.width - settings.gapDistance) {
+                createPipe();
+            }
+        }
+        
+        // Проверка увеличения скорости
+        function checkSpeedIncrease() {
+            // Увеличиваем скорость каждые 5 столбов
+            if (score >= lastSpeedIncreaseScore + 5) {
+                lastSpeedIncreaseScore = score;
+                speedLevel++;
+                settings.speedMultiplier = 1 + (speedLevel - 1) * 0.2; // Увеличиваем на 20% за каждый уровень
+                speedInfoElement.textContent = `Скорость: ${settings.speedMultiplier.toFixed(1)}x`;
+                
+                // Воспроизводим звук увеличения скорости
+                speedUpSound.currentTime = 0;
+                speedUpSound.play();
+                
+                // Показываем уведомление
+                showNotification(`Скорость увеличена! ${settings.speedMultiplier.toFixed(1)}x`);
+            }
+        }
+
+        // Проверка столкновений
+        function checkCollisions() {
+            if (gamePaused) return;
+            
+            for (const pipe of pipes) {
+                if (
+                    bird.x + bird.width > pipe.x &&
+                    bird.x < pipe.x + pipe.width &&
+                    (bird.y < pipe.gapStart || bird.y + bird.height > pipe.gapStart + pipe.gapHeight)
+                ) {
+                    gameOver();
+                    return;
+                }
+            }
+        }
+
+        // Конец игры
+        function gameOver() {
+            gameActive = false;
+            hitSound.play();
+            
+            showNotification(`Игра окончена!<br>Счет: ${score}<br>Уровень: ${getDifficultyName(currentDifficulty)}<br>Скорость: ${settings.speedMultiplier.toFixed(1)}x`);
+            
+            setTimeout(() => {
+                startMenu.style.display = 'flex';
+            }, 1500);
+        }
+
+        // Получить название уровня сложности
+        function getDifficultyName(difficulty) {
+            const names = {
+                'easy': 'Легкий',
+                'medium': 'Средний',
+                'hard': 'Сложный'
+            };
+            return names[difficulty] || difficulty;
+        }
+
+        // Уведомления
+        function showNotification(message) {
+            notificationElement.innerHTML = message;
+            notificationElement.style.display = 'block';
+            setTimeout(() => {
+                notificationElement.style.display = 'none';
+            }, 2000);
+        }
+
+        // Основной игровой цикл
+        function gameLoop() {
+            if (!gameActive) return;
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Фон
+            ctx.fillStyle = '#87CEEB';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Облака
+            updateClouds();
+            drawClouds();
+            
+            // Столбы
+            updatePipes();
+            drawPipes();
+            
+            // Птичка
+            updateBird();
+            drawBird();
+            
+            // Столкновения
+            checkCollisions();
+            
+            animationFrameId = requestAnimationFrame(gameLoop);
+        }
+
+        // Управление
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                if (!gameActive && !gamePaused) {
+                    startGame(currentDifficulty);
+                } else {
+                    flap();
+                }
+                e.preventDefault();
+            } else if (e.code === 'Escape') {
+                togglePause();
+            }
+        });
+
+        canvas.addEventListener('touchstart', (e) => {
+            if (!gameActive && !gamePaused) {
+                startGame(currentDifficulty);
+            } else {
+                flap();
+            }
+            e.preventDefault();
+        });
+
+        // Функции управления игрой
+        function startGame(difficulty) {
+            currentDifficulty = difficulty;
+            settings = {...difficultySettings[difficulty]};
+            
+            // Сброс игры
+            bird = {
+                x: 80,
+                y: canvas.height / 2,
+                width: settings.birdWidth,
+                height: settings.birdHeight,
+                velocity: 0,
+                rotation: 0
+            };
+            
+            pipes = [];
+            score = 0;
+            scoreElement.textContent = score;
+            gameActive = true;
+            gamePaused = false;
+            startMenu.style.display = 'none';
+            speedLevel = 1;
+            lastSpeedIncreaseScore = 0;
+            settings.speedMultiplier = 1;
+            speedInfoElement.textContent = `Скорость: 1x`;
+            
+            // Начать музыку
+            music.currentTime = 0;
+            music.volume = 0.3;
+            music.play();
+            
+            // Начать игровой цикл
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+            }
+            gameLoop();
+        }
+
+        function resetGame() {
+            if (gameActive) {
+                startGame(currentDifficulty);
+            } else {
+                showNotification("Выберите уровень и нажмите Играть");
+            }
+        }
+
+        function togglePause() {
+            if (!gameActive) return;
+            
+            gamePaused = !gamePaused;
+            
+            if (gamePaused) {
+                showNotification("Пауза");
+                music.pause();
+                cancelAnimationFrame(animationFrameId);
+            } else {
+                showNotification("Продолжаем!");
+                music.play();
+                gameLoop();
+            }
+        }
+
+        // Инициализация
+        highScoreElement.textContent = `Лучший: ${highScore}`;
+        createClouds();
+    </script>
+</body>
+</html>
